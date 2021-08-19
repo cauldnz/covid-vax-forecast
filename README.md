@@ -1,2 +1,2 @@
 # covid-vax-forecast
-A basic model for performing logistic growth forecast of Covid vaxs via Prophet
+A basic model for performing logistic growth forecast of Covid vaxs via Prophet. It's pretty scruffy and really just for working out my chances to ski in Japan this winter and for arguing on Twitter. But may be useful for others to grab and iterate on...
