@@ -7,3 +7,11 @@ Some example output
 - https://cauldnz.github.io/covid-vax-examples/AUS-forecast.html
 - https://cauldnz.github.io/covid-vax-examples/JPN-forecast.html
 - https://cauldnz.github.io/covid-vax-examples/NZL-forecast.html
+
+If you're having trouble using Prophet on Ubuntu (and maybe other flavours of Linux/Unix) then you're likely running into an issue building RStan. Check that you have a C++ 14 compiler directive in your Makevars. 
+
+`cat ~/.R/Makevars`
+
+If you don't see a line like `CXX14=g++` or if you don't have a Makevars file then make sure you at least have a `.R` directory in `home` and then
+
+`echo "CXX14 = g++ -std=c++1y -Wno-unused-variable -Wno-unused-function -fPIC" >> ~/.R/Makevars`
