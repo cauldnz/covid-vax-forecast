@@ -5,10 +5,10 @@
 #************Provide input parameters here**********
 #cty_chr<-'AUS' #Provide as code from here https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3
 #cty_iso<- 36 #Provide as Integer (no leading 0) from here https://en.wikipedia.org/wiki/ISO_3166-1_numeric
-#cty_chr<-'JPN' #Provide as code from here https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3
-#cty_iso<- 392 #Provide as Integer (no leading 0) from here https://en.wikipedia.org/wiki/ISO_3166-1_numeric
-cty_chr<-'NZL' #Provide as code from here https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3
-cty_iso<- 554 #Provide as Integer (no leading 0) from here https://en.wikipedia.org/wiki/ISO_3166-1_numeric
+cty_chr<-'JPN' #Provide as code from here https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3
+cty_iso<- 392 #Provide as Integer (no leading 0) from here https://en.wikipedia.org/wiki/ISO_3166-1_numeric
+#cty_chr<-'NZL' #Provide as code from here https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3
+#cty_iso<- 554 #Provide as Integer (no leading 0) from here https://en.wikipedia.org/wiki/ISO_3166-1_numeric
 #*
 #*
 #*****************************************************
@@ -32,6 +32,7 @@ library(data.table)
 library(lubridate)
 library(wpp2019)
 library(dplyr)
+library(dygraphs)
 
 data(pop)
 popn <-data.table(pop) #Forecast population
@@ -54,11 +55,10 @@ forecast <- predict(model, ds_future)
 plot(model, forecast)
 
 #Dynamic Plot
-dyplot.prophet(model, forecast, graphTitle=paste("Forecast for: ", cty_chr))
-
+dyplot.prophet(model, forecast, graphTitle=paste("Forecast for: ", cty_chr), limitLine=proj_popn*0.8, limitLabel="80%")
 
 #Nicked from https://stackoverflow.com/questions/53947623/how-to-change-type-of-line-in-prophet-plot
-dyplot.prophet <- function(x, fcst, uncertainty=TRUE, graphTitle, ...) 
+dyplot.prophet <- function(x, fcst, uncertainty=TRUE, graphTitle, limitLine, limitLabel, ...) 
 {
   forecast.label='Predicted'
   actual.label='Actual'
@@ -96,7 +96,11 @@ dyplot.prophet <- function(x, fcst, uncertainty=TRUE, graphTitle, ...)
     # allow zooming
     dygraphs::dyRangeSelector() %>% 
     # make unzoom button
-    dygraphs::dyUnzoom()
+    dygraphs::dyUnzoom() %>%
+    #Add Crosshairs
+    dyCrosshair(direction = "both") %>%
+    #Add threshold line and label
+    dyLimit(as.numeric(limitLine), color = "red", label=limitLabel)
   if (!is.null(x$holidays)) {
     for (i in 1:nrow(x$holidays)) {
       # make a gray line
