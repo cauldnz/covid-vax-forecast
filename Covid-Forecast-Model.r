@@ -3,14 +3,29 @@
 # I'm not convinced this is quite as realistic as we can be given it's a constrained growth (logistic growth) model
 # So here's my attempt at using the same data set for a quick and dirty whip-up of a Prophet based growth model
 #************Provide input parameters here**********
-#cty_chr<-'AUS' #Provide as code from here https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3
-#cty_iso<- 36 #Provide as Integer (no leading 0) from here https://en.wikipedia.org/wiki/ISO_3166-1_numeric
-cty_chr<-'JPN' #Provide as code from here https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3
-cty_iso<- 392 #Provide as Integer (no leading 0) from here https://en.wikipedia.org/wiki/ISO_3166-1_numeric
-#cty_chr<-'NZL' #Provide as code from here https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3
-#cty_iso<- 554 #Provide as Integer (no leading 0) from here https://en.wikipedia.org/wiki/ISO_3166-1_numeric
-#*
-#*
+#Provide as code from here https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3
+#Provide as Integer (no leading 0) from here https://en.wikipedia.org/wiki/ISO_3166-1_numeric
+
+#cty_chr<-'SIN'
+#cty_iso<- 702 
+
+#cty_chr<-'AUS'
+#cty_iso<- 36 
+
+#cty_chr<-'JPN'
+#cty_iso<- 392
+
+cty_chr<-'NZL'
+cty_iso<- 554 
+
+#cty_chr<-'TWN' 
+#cty_iso<- 158 
+
+#cty_chr<-'CRI' 
+#cty_iso<- 188 
+
+
+
 #*****************************************************
 
 
@@ -37,12 +52,14 @@ library(dygraphs)
 data(pop)
 popn <-data.table(pop) #Forecast population
 
-proj_popn<- as.integer(popn[country_code==cty_iso]$'2020'  * 1000 )
+proj_popn<- as.integer(popn[country_code==cty_iso]$'2020'  * 1000 ) * 2
 
 #Retrieve raw 'Our World in Data' vaccination dataset
 vax_data_json <- fromJSON('https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/vaccinations/vaccinations.json')
+#vax_data_json <- fromJSON('https://raw.githubusercontent.com/cauldnz/covid-19-data/cauld/public/data/vaccinations/vaccinations.json')
 vax_data <- data.table(vax_data_json$data[which(vax_data_json$iso_code==cty_chr)][[1]])
-series_dt <- vax_data[,.(ds=date,y=people_fully_vaccinated)]
+series_dt <- vax_data[,.(ds=date,y=total_vaccinations)]
+
 series_dt[,ds:=as_date(ds)]
 series_dt[,cap:=proj_popn*.9] # Set growth capacity at 90% of total population... 
 
@@ -55,7 +72,7 @@ forecast <- predict(model, ds_future)
 plot(model, forecast)
 
 #Dynamic Plot
-dyplot.prophet(model, forecast, graphTitle=paste("Forecast for: ", cty_chr), limitLine=proj_popn*0.8, limitLabel="80%")
+dyplot.prophet(model, forecast, graphTitle=paste("Forecast for: ", cty_chr, " Latest data: ", max(series_dt$ds)), limitLine=proj_popn*0.7, limitLabel="70%")
 
 #Nicked from https://stackoverflow.com/questions/53947623/how-to-change-type-of-line-in-prophet-plot
 dyplot.prophet <- function(x, fcst, uncertainty=TRUE, graphTitle, limitLine, limitLabel, ...) 
