@@ -24,6 +24,8 @@ cty_iso<- 554
 #cty_chr<-'CRI' 
 #cty_iso<- 188 
 
+#cty_chr<-'MEX' 
+#cty_iso<- 484 
 
 
 #*****************************************************
@@ -52,18 +54,19 @@ library(dygraphs)
 data(pop)
 popn <-data.table(pop) #Forecast population
 
-proj_popn<- as.integer(popn[country_code==cty_iso]$'2020'  * 1000 ) * 2
+proj_popn<- as.integer(popn[country_code==cty_iso]$'2020'  * 1000 ) * 2 #Moved to using total vaccinations so assume 2 dose reigime and just double popn.
 
 #Retrieve raw 'Our World in Data' vaccination dataset
-vax_data_json <- fromJSON('https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/vaccinations/vaccinations.json')
-#vax_data_json <- fromJSON('https://raw.githubusercontent.com/cauldnz/covid-19-data/cauld/public/data/vaccinations/vaccinations.json')
+#vax_data_json <- fromJSON('https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/vaccinations/vaccinations.json')
+vax_data_json <- fromJSON('https://raw.githubusercontent.com/cauldnz/covid-19-data/cauld/public/data/vaccinations/vaccinations.json')
 vax_data <- data.table(vax_data_json$data[which(vax_data_json$iso_code==cty_chr)][[1]])
 series_dt <- vax_data[,.(ds=date,y=total_vaccinations)]
 
 series_dt[,ds:=as_date(ds)]
 series_dt[,cap:=proj_popn*.9] # Set growth capacity at 90% of total population... 
 
-model <- prophet(series_dt,growth = 'logistic')
+model <- prophet(series_dt,growth = 'logistic', weekly.seasonality = TRUE, daily.seasonality = FALSE, yearly.seasonality = FALSE)
+
 ds_future <- data.table(make_future_dataframe(model, periods = 180))
 ds_future[,cap:=proj_popn*.9]
 forecast <- predict(model, ds_future)
@@ -72,7 +75,7 @@ forecast <- predict(model, ds_future)
 plot(model, forecast)
 
 #Dynamic Plot
-dyplot.prophet(model, forecast, graphTitle=paste("Forecast for: ", cty_chr, " Latest data: ", max(series_dt$ds)), limitLine=proj_popn*0.7, limitLabel="70%")
+dyplot.prophet(model, forecast, graphTitle=paste("Forecast for: ", cty_chr, " Latest data: ", max(series_dt$ds)), limitLine=proj_popn*0.8, limitLabel="80%")
 
 #Nicked from https://stackoverflow.com/questions/53947623/how-to-change-type-of-line-in-prophet-plot
 dyplot.prophet <- function(x, fcst, uncertainty=TRUE, graphTitle, limitLine, limitLabel, ...) 
