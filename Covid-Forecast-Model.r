@@ -16,7 +16,9 @@
   #cty_iso<- 392
   
   cty_chr<-'NZL'
-  cty_iso<- 554 
+  cty_iso<- 554
+  popn_manual<- 4208338  # from NZ MoH HSU Population projection in spreadsheet
+
   
   #cty_chr<-'TWN' 
   #cty_iso<- 158 
@@ -52,7 +54,13 @@
   library(dygraphs)
   
   data(pop)
-  popn <-data.table(pop) #Forecast population
+  
+  if(popn_manual)  {
+    popn<-popn_manual
+  } else {
+    popn <-data.table(pop) #Forecast population
+  }
+    
   
   proj_popn<- as.integer(popn[country_code==cty_iso]$'2020'  * 1000 ) * 2 #Moved to using total vaccinations so assume 2 dose reigime and just double popn.
   
