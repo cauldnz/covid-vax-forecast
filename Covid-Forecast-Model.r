@@ -8,16 +8,19 @@
   
   #cty_chr<-'SIN'
   #cty_iso<- 702 
+  #popn_manual<-0
   
-  #cty_chr<-'AUS'
-  #cty_iso<- 36 
+  cty_chr<-'AUS'
+  cty_iso<- 36
+  popn_manual<-0
   
   #cty_chr<-'JPN'
   #cty_iso<- 392
+  #popn_manual<-0
   
-  cty_chr<-'NZL'
-  cty_iso<- 554
-  popn_manual<- 4208338  # from NZ MoH HSU Population projection in spreadsheet
+  #cty_chr<-'NZL'
+  #cty_iso<- 554
+  #popn_manual<- 4208338  # Population over 12 from NZ MoH HSU Population projection in spreadsheet
 
   
   #cty_chr<-'TWN' 
@@ -55,23 +58,24 @@
   
   data(pop)
   
-  if(popn_manual)  {
-    popn<-popn_manual
+  if(popn_manual>0)  {
+    proj_popn<-popn_manual * 2
   } else {
     popn <-data.table(pop) #Forecast population
+    proj_popn<- as.integer(popn[country_code==cty_iso]$'2020'  * 1000 ) * 2 #Moved to using total vaccinations so assume 2 dose reigime and just double popn.
   }
     
   
-  proj_popn<- as.integer(popn[country_code==cty_iso]$'2020'  * 1000 ) * 2 #Moved to using total vaccinations so assume 2 dose reigime and just double popn.
+  
   
   #Retrieve raw 'Our World in Data' vaccination dataset
-  #vax_data_json <- fromJSON('https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/vaccinations/vaccinations.json')
-  vax_data_json <- fromJSON('https://raw.githubusercontent.com/cauldnz/covid-19-data/cauld/public/data/vaccinations/vaccinations.json')
+  vax_data_json <- fromJSON('https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/vaccinations/vaccinations.json')
+  #vax_data_json <- fromJSON('https://raw.githubusercontent.com/cauldnz/covid-19-data/cauld/public/data/vaccinations/vaccinations.json')
   vax_data <- data.table(vax_data_json$data[which(vax_data_json$iso_code==cty_chr)][[1]])
   series_dt <- vax_data[,.(ds=date,y=total_vaccinations)]
   
   series_dt[,ds:=as_date(ds)]
-  series_dt[,cap:=proj_popn*.9] # Set growth capacity at 90% of total population... 
+  series_dt[,cap:=proj_popn*.90] # Set growth capacity at 90% of total population... 
   
   model <- prophet(series_dt,growth = 'logistic', weekly.seasonality = TRUE, daily.seasonality = FALSE, yearly.seasonality = FALSE)
   
