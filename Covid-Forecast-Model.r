@@ -6,22 +6,24 @@
   #Provide as code from here https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3
   #Provide as Integer (no leading 0) from here https://en.wikipedia.org/wiki/ISO_3166-1_numeric
   
+  growth_cap<-0.90
+
   #cty_chr<-'SIN'
   #cty_iso<- 702 
   #popn_manual<-0
   
-  cty_chr<-'AUS'
-  cty_iso<- 36
-  popn_manual<-0
+  #cty_chr<-'AUS'
+  #cty_iso<- 36
+  #popn_manual<-21865095 # 12 & over from ABS data https://www.abs.gov.au/statistics/people/population/national-state-and-territory-population/mar-2021#data-download
   
-  #cty_chr<-'JPN'
-  #cty_iso<- 392
-  #popn_manual<-0
+  cty_chr<-'JPN'
+  cty_iso<- 392
+  popn_manual<- 125710000 * 0.89 #Quick estimate based on table here: https://en.wikipedia.org/wiki/Demographics_of_Japan#Population_density
   
   #cty_chr<-'NZL'
   #cty_iso<- 554
   #popn_manual<- 4208338  # Population over 12 from NZ MoH HSU Population projection in spreadsheet
-
+  #popn_manual<- 4208338 + (791346/2) #As above but add in 50% of the 0-11 age group
   
   #cty_chr<-'TWN' 
   #cty_iso<- 158 
@@ -75,12 +77,12 @@
   series_dt <- vax_data[,.(ds=date,y=total_vaccinations)]
   
   series_dt[,ds:=as_date(ds)]
-  series_dt[,cap:=proj_popn*.90] # Set growth capacity at 90% of total population... 
+  series_dt[,cap:=proj_popn*growth_cap] # Set growth capacity at 90% of total population... 
   
   model <- prophet(series_dt,growth = 'logistic', weekly.seasonality = TRUE, daily.seasonality = FALSE, yearly.seasonality = FALSE)
   
   ds_future <- data.table(make_future_dataframe(model, periods = 180))
-  ds_future[,cap:=proj_popn*.9]
+  ds_future[,cap:=proj_popn*growth_cap]
   forecast <- predict(model, ds_future)
   
   #Static Plot
