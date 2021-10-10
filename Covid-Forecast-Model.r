@@ -6,8 +6,23 @@
   #Provide as code from here https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3
   #Provide as Integer (no leading 0) from here https://en.wikipedia.org/wiki/ISO_3166-1_numeric
   
-  growth_cap<-0.90
 
+  # load the package
+  #library('COVID19') # We don't use this library as the vaccination data is too coarse grained.
+  library(jsonlite)
+  library(prophet)
+  library(data.table)
+  library(lubridate)
+  library(wpp2019)
+  library(dplyr)
+  library(dygraphs)
+  
+  data(pop)
+
+  growth_cap<-0.90
+  first_dose_model <- TRUE #Models jut the first does. Interesting when looking at hesitancy/access as countries progress
+
+  
   #cty_chr<-'SIN'
   #cty_iso<- 702 
   #popn_manual<-0
@@ -16,14 +31,16 @@
   #cty_iso<- 36
   #popn_manual<-21865095 # 12 & over from ABS data https://www.abs.gov.au/statistics/people/population/national-state-and-territory-population/mar-2021#data-download
   
-  cty_chr<-'JPN'
-  cty_iso<- 392
-  popn_manual<- 125710000 * 0.89 #Quick estimate based on table here: https://en.wikipedia.org/wiki/Demographics_of_Japan#Population_density
+  #cty_chr<-'JPN'
+  #cty_iso<- 392
+  #popn_manual<- 125710000 * 0.89 #Quick estimate based on table here: https://en.wikipedia.org/wiki/Demographics_of_Japan#Population_density
   
-  #cty_chr<-'NZL'
-  #cty_iso<- 554
+  cty_chr<-'NZL'
+  cty_iso<- 554
   #popn_manual<- 4208338  # Population over 12 from NZ MoH HSU Population projection in spreadsheet
-  #popn_manual<- 4208338 + (791346/2) #As above but add in 50% of the 0-11 age group
+  popn_manual<- 4208338 + (791346/2) #As above but add in 50% of the 0-11 age group
+  country_data <- fread("./nz-double-dose-data.csv",col.names=c("date","first_dose","second_dose"), colClasses = c("myDate","integer","integer"))
+  country_series_dt <- country_data[,.(ds=date,y=cumsum(first_dose))]
   
   #cty_chr<-'TWN' 
   #cty_iso<- 158 
@@ -48,34 +65,27 @@
   #install.packages('wpp2019')
   #install.packages("rmarkdown", repos="https://cran.r-project.org/") #I use MRO... so force install latest from CRAN
   
-  # load the package
-  #library('COVID19') # We don't use this library as the vaccination data is too coarse grained.
-  library(jsonlite)
-  library(prophet)
-  library(data.table)
-  library(lubridate)
-  library(wpp2019)
-  library(dplyr)
-  library(dygraphs)
-  
-  data(pop)
+
   
   if(popn_manual>0)  {
-    proj_popn<-popn_manual * 2
+    proj_popn<-popn_manual
   } else {
     popn <-data.table(pop) #Forecast population
-    proj_popn<- as.integer(popn[country_code==cty_iso]$'2020'  * 1000 ) * 2 #Moved to using total vaccinations so assume 2 dose reigime and just double popn.
+    proj_popn<- as.integer(popn[country_code==cty_iso]$'2020'  * 1000 )
   }
-    
-  
-  
-  
+
   #Retrieve raw 'Our World in Data' vaccination dataset
   vax_data_json <- fromJSON('https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/vaccinations/vaccinations.json')
   #vax_data_json <- fromJSON('https://raw.githubusercontent.com/cauldnz/covid-19-data/cauld/public/data/vaccinations/vaccinations.json')
   vax_data <- data.table(vax_data_json$data[which(vax_data_json$iso_code==cty_chr)][[1]])
-  series_dt <- vax_data[,.(ds=date,y=total_vaccinations)]
   
+  if (!first_dose_model){
+    #Model double dose and assume two-dose regime for all
+    proj_popn <- proj_popn * 2 #Moved to using total vaccinations so assume 2 dose reigime and just double popn. 
+    series_dt <- vax_data[,.(ds=date,y=total_vaccinations)]
+  } else {
+    series_dt <- country_series_dt
+  }
   series_dt[,ds:=as_date(ds)]
   series_dt[,cap:=proj_popn*growth_cap] # Set growth capacity at 90% of total population... 
   
