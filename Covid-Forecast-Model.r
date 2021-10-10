@@ -37,9 +37,9 @@
   
   cty_chr<-'NZL'
   cty_iso<- 554
-  #popn_manual<- 4208338  # Population over 12 from NZ MoH HSU Population projection in spreadsheet
-  popn_manual<- 4208338 + (791346/2) #As above but add in 50% of the 0-11 age group
-  country_data <- fread("./nz-double-dose-data.csv",col.names=c("date","first_dose","second_dose"), colClasses = c("myDate","integer","integer"))
+  popn_manual<- 4208338  # Population over 12 from NZ MoH HSU Population projection in spreadsheet
+  #popn_manual<- 4208338 + (791346/2) #As above but add in 50% of the 0-11 age group
+  country_data <- fread("https://raw.githubusercontent.com/UoA-eResearch/nz-covid19-data-auto/main/vaccinations/Date.csv",col.names=c("date","first_dose","second_dose"), colClasses = c("myDate","integer","integer"))
   country_series_dt <- country_data[,.(ds=date,y=cumsum(first_dose))]
   
   #cty_chr<-'TWN' 
@@ -99,7 +99,7 @@
   plot(model, forecast)
   
   #Dynamic Plot
-  dyplot.prophet(model, forecast, graphTitle=paste("Forecast for: ", cty_chr, " Latest data: ", max(series_dt$ds)), limitLine=proj_popn*0.8, limitLabel="80%")
+  dyplot.prophet(model, forecast, graphTitle=paste("Forecast for: ", cty_chr, " Latest data: ", max(series_dt$ds), ifelse(first_dose_model," First Dose Only", " Full Regime")), limitLine=proj_popn*0.8, limitLabel="80%")
   
   #Nicked from https://stackoverflow.com/questions/53947623/how-to-change-type-of-line-in-prophet-plot
   dyplot.prophet <- function(x, fcst, uncertainty=TRUE, graphTitle, limitLine, limitLabel, ...) 
