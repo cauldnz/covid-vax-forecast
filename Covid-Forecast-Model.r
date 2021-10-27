@@ -20,8 +20,12 @@
   data(pop)
 
   growth_cap<-0.90
+  threshold_line<-0.90
   first_dose_model <- TRUE #Models jut the first does. Interesting when looking at hesitancy/access as countries progress
 
+  #cty_chr<-'PRT'
+  #cty_iso<- 620 
+  #popn_manual<-0
   
   #cty_chr<-'SIN'
   #cty_iso<- 702 
@@ -34,13 +38,16 @@
   #cty_chr<-'JPN'
   #cty_iso<- 392
   #popn_manual<- 125710000 * 0.89 #Quick estimate based on table here: https://en.wikipedia.org/wiki/Demographics_of_Japan#Population_density
+  #popn_manual<- 0
   
   cty_chr<-'NZL'
   cty_iso<- 554
   popn_manual<- 4208338  # Population over 12 from NZ MoH HSU Population projection in spreadsheet
   #popn_manual<- 4208338 + (791346/2) #As above but add in 50% of the 0-11 age group
-  country_data <- fread("https://raw.githubusercontent.com/UoA-eResearch/nz-covid19-data-auto/main/vaccinations/Date.csv",col.names=c("date","first_dose","second_dose"), colClasses = c("myDate","integer","integer"))
+  #country_data <- fread("https://raw.githubusercontent.com/cauldnz/nz-covid19-data-auto/main/vaccinations/Date.csv",col.names=c("date","first_dose","second_dose"), colClasses = c("Date","integer","integer"))
+  country_data <- fread("https://raw.githubusercontent.com/UoA-eResearch/nz-covid19-data-auto/main/vaccinations/Date.csv",col.names=c("date","first_dose","second_dose"), colClasses = c("Date","integer","integer"))
   country_series_dt <- country_data[,.(ds=date,y=cumsum(first_dose))]
+  
   
   #cty_chr<-'TWN' 
   #cty_iso<- 158 
@@ -99,7 +106,7 @@
   plot(model, forecast)
   
   #Dynamic Plot
-  dyplot.prophet(model, forecast, graphTitle=paste("Forecast for: ", cty_chr, " Latest data: ", max(series_dt$ds), ifelse(first_dose_model," First Dose Only", " Full Regime")), limitLine=proj_popn*0.8, limitLabel="80%")
+  dyplot.prophet(model, forecast, graphTitle=paste("Forecast for: ", cty_chr, " Latest data: ", max(series_dt$ds), ifelse(first_dose_model," First Dose Only", " All Doses")), limitLine=proj_popn*threshold_line, limitLabel=paste(threshold_line*100,"%"))
   
   #Nicked from https://stackoverflow.com/questions/53947623/how-to-change-type-of-line-in-prophet-plot
   dyplot.prophet <- function(x, fcst, uncertainty=TRUE, graphTitle, limitLine, limitLabel, ...) 
