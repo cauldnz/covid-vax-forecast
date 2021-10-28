@@ -1,10 +1,8 @@
-  # I am a fan of the http://covidvax.live site. But, from what I can tell it's just straight line projecting
-  # recent growth out in order to build its forecast for when countries reach 70%
-  # I'm not convinced this is quite as realistic as we can be given it's a constrained growth (logistic growth) model
-  # So here's my attempt at using the same data set for a quick and dirty whip-up of a Prophet based growth model
+  # This basically forks off the by country forecast model to work on NZ MoH's by DHB dataset.
+  # This data is weekly so it a bit rougher. You can grab DHB name and population here https://www.health.govt.nz/our-work/diseases-and-conditions/covid-19-novel-coronavirus/covid-19-data-and-statistics/covid-19-vaccine-data
   #************Provide input parameters here**********
-  #Provide as code from here https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3
-  #Provide as Integer (no leading 0) from here https://en.wikipedia.org/wiki/ISO_3166-1_numeric
+  dhb_name <- "Northland"
+  dhb_population <- 161320 #Manually entered population of DHB region
   
 
   # load the package
@@ -27,9 +25,6 @@
   cty_chr<-'NZL'
   cty_iso<- 554
   popn_manual<- 4208338  # Population over 12 from NZ MoH HSU Population projection in spreadsheet
-  
-  dhb_name <- "Northland"
-  dhb_population <- 161320 #Manually entered population of DHB region
   
   dhb_data <- fread("https://raw.githubusercontent.com/cauldnz/nz-covid19-data-auto/main/vaccinations/Group%20by%20DHBOfService.csv",col.names=c("date","group","dhb","dose_num","doses","notes"), colClasses = c("Date","factor","factor","integer","integer","factor"))
   dhb_data$notes<-NULL
