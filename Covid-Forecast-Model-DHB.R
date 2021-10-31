@@ -2,7 +2,9 @@
   # This data is weekly so it a bit rougher. You can grab DHB name and population here https://www.health.govt.nz/our-work/diseases-and-conditions/covid-19-novel-coronavirus/covid-19-data-and-statistics/covid-19-vaccine-data
   #************Provide input parameters here**********
   dhb_name <- "Northland"
-  dhb_population <- 161320 #Manually entered population of DHB region
+  
+  
+  
   
 
   # load the package
@@ -26,30 +28,29 @@
   cty_iso<- 554
   popn_manual<- 4208338  # Population over 12 from NZ MoH HSU Population projection in spreadsheet
   
-  dhb_data <- fread("https://raw.githubusercontent.com/cauldnz/nz-covid19-data-auto/main/vaccinations/Group%20by%20DHBOfService.csv",col.names=c("date","group","dhb","dose_num","doses","notes"), colClasses = c("Date","factor","factor","integer","integer","factor"))
+  dhb_data <- fread("https://raw.githubusercontent.com/UoA-eResearch/nz-covid19-data-auto/main/vaccinations/Group%20by%20DHBOfService.csv",col.names=c("date","group","dhb","dose_num","doses","notes"), colClasses = c("Date","factor","factor","integer","integer","factor"))
   dhb_data$notes<-NULL
   dhb_data <- dhb_data[dose_num==1 & dhb==dhb_name]
   dhb_data <- dhb_data[, .(date=date, first_dose=sum(doses)), by=list(date,dhb,dose_num)]
   dhb_series_dt <- dhb_data[,.(ds=date,y=cumsum(first_dose))]
-  #country_data <- fread("https://raw.githubusercontent.com/UoA-eResearch/nz-covid19-data-auto/main/vaccinations/Date.csv",col.names=c("date","first_dose","second_dose"), colClasses = c("Date","integer","integer"))
-  country_series_dt <- country_data[,.(ds=date,y=cumsum(first_dose))]
-  country_series_dt<-dhb_series_dt
-  popn_manual<- dhb_population 
+
   
- 
+  #Fetch latest data point via a screen scrape from MoH
+  library(rvest)
+  moh_page<-read_html('https://www.health.govt.nz/our-work/diseases-and-conditions/covid-19-novel-coronavirus/covid-19-data-and-statistics/covid-19-vaccine-data')
+  node<-html_node(moh_page, xpath="//h4[normalize-space()='All Ethnicities']//following::table[1]")
+  dhb_latest_dt<-data.table(html_table(node))
+  setnames(dhb_latest_dt,c('V1','First doses'),c('DHB','FirstDoses'))
+  #Get Eligible population from scraped table
+  
+  dhb_population <- dhb_latest_dt[DHB==dhb_name,as.integer(gsub(',','',Population))] #MoH elligible DHB region population
+  dhb_latest <- dhb_latest_dt[DHB==dhb_name,as.integer(gsub(',','',FirstDoses))]
+  
+  dhb_series_dt<-rbind(dhb_series_dt,data.table(Sys.Date(),dhb_latest),use.names=F)
   #*****************************************************
   
-  
-  
-  # install the package
-  #install.packages("COVID19")
-  #install.packages('jsonlite')
-  #install.packages('prophet')
-  #install.packages('data.table')
-  #install.packages('lubridate')
-  #install.packages('wpp2019')
-  #install.packages("rmarkdown", repos="https://cran.r-project.org/") #I use MRO... so force install latest from CRAN
-  
+  country_series_dt<-dhb_series_dt
+  popn_manual<- dhb_population 
 
   
   if(popn_manual>0)  {
