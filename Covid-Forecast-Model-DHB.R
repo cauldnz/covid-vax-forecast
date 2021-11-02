@@ -1,9 +1,7 @@
   # This basically forks off the by country forecast model to work on NZ MoH's by DHB dataset.
   # This data is weekly so it a bit rougher. You can grab DHB name and population here https://www.health.govt.nz/our-work/diseases-and-conditions/covid-19-novel-coronavirus/covid-19-data-and-statistics/covid-19-vaccine-data
   #************Provide input parameters here**********
-  dhb_name <- "Northland"
-  
-  
+  dhb_name <- "Tairawhiti"
   
   
 
@@ -19,7 +17,7 @@
   
   data(pop)
 
-  growth_cap<-0.90
+  growth_cap<-0.95
   threshold_line<-0.90
   first_dose_model <- TRUE #Models jut the first does. Interesting when looking at hesitancy/access as countries progress
 
@@ -28,6 +26,13 @@
   cty_iso<- 554
   popn_manual<- 4208338  # Population over 12 from NZ MoH HSU Population projection in spreadsheet
   
+  #Fetch latest data point via a screen scrape from MoH
+  library(rvest)
+  moh_page<-read_html('https://www.health.govt.nz/our-work/diseases-and-conditions/covid-19-novel-coronavirus/covid-19-data-and-statistics/covid-19-vaccine-data')
+  node<-html_node(moh_page, xpath="//h4[normalize-space()='All Ethnicities']//following::table[1]")
+  dhb_latest_dt<-data.table(html_table(node))
+  setnames(dhb_latest_dt,c('V1','First doses'),c('DHB','FirstDoses'))
+  
   dhb_data <- fread("https://raw.githubusercontent.com/UoA-eResearch/nz-covid19-data-auto/main/vaccinations/Group%20by%20DHBOfService.csv",col.names=c("date","group","dhb","dose_num","doses","notes"), colClasses = c("Date","factor","factor","integer","integer","factor"))
   dhb_data$notes<-NULL
   dhb_data <- dhb_data[dose_num==1 & dhb==dhb_name]
@@ -35,12 +40,7 @@
   dhb_series_dt <- dhb_data[,.(ds=date,y=cumsum(first_dose))]
 
   
-  #Fetch latest data point via a screen scrape from MoH
-  library(rvest)
-  moh_page<-read_html('https://www.health.govt.nz/our-work/diseases-and-conditions/covid-19-novel-coronavirus/covid-19-data-and-statistics/covid-19-vaccine-data')
-  node<-html_node(moh_page, xpath="//h4[normalize-space()='All Ethnicities']//following::table[1]")
-  dhb_latest_dt<-data.table(html_table(node))
-  setnames(dhb_latest_dt,c('V1','First doses'),c('DHB','FirstDoses'))
+  
   #Get Eligible population from scraped table
   
   dhb_population <- dhb_latest_dt[DHB==dhb_name,as.integer(gsub(',','',Population))] #MoH elligible DHB region population
@@ -82,10 +82,12 @@
   forecast <- predict(model, ds_future)
   
   #Static Plot
-  plot(model, forecast)
+  #plot(model, forecast)
   
   #Dynamic Plot
   dyplot.prophet(model, forecast, graphTitle=paste("Forecast for: ", dhb_name, " Latest data: ", max(series_dt$ds), ifelse(first_dose_model," First Dose Only", " All Doses")), limitLine=proj_popn*threshold_line, limitLabel=paste(threshold_line*100,"%"))
+  
+  
   
   #Nicked from https://stackoverflow.com/questions/53947623/how-to-change-type-of-line-in-prophet-plot
   dyplot.prophet <- function(x, fcst, uncertainty=TRUE, graphTitle, limitLine, limitLabel, ...) 
